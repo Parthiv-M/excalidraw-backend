@@ -11,6 +11,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ extended: false }));
 
+// function to save the file to the uploads directory on the server
 const saveFile = async (file, fileName) => {
   const data = fs.readFileSync(file.path);
   fs.writeFileSync(`${__dirname}/uploads/${fileName}.png`, data);
@@ -18,14 +19,20 @@ const saveFile = async (file, fileName) => {
   return;
 };
 
+// route that handles image upload
 app.post("/api/upload", (req, res) => {
-    const form = new formidable.IncomingForm();
-    form.parse(req, async function (err, fields, files) {
-      await saveFile(files.file, fields.fileName.substring(fields.fileName.lastIndexOf("/") + 1, fields.fileName.length - 1));
-      return res.status(200).send({ success: true, message: "File uploaded successfully" });
-    });
+    try {
+        const form = new formidable.IncomingForm();
+        form.parse(req, async function (err, fields, files) {
+            await saveFile(files.file, fields.fileName.substring(fields.fileName.lastIndexOf("/") + 1, fields.fileName.length - 1));
+            return res.status(200).send({ success: true, message: "File uploaded successfully" });
+        });    
+    } catch (error) {
+        res.status(500).send({ success: false, message: "Oops, server error" });
+    }   
 });
 
+// route that sends back the file names in the uploads directory
 app.get("/api/getFiles", (req, res) => {
     try {
         fs.readdir(`${__dirname}/uploads`, (err, files) => {
@@ -40,13 +47,18 @@ app.get("/api/getFiles", (req, res) => {
     }
 })
 
+// route that lets the user download the image given a filename
 app.get("/api/download", (req, res) => {
-    if(!req.query || !req.query.fileName) {
-        return res.status(401).send({ success: false, message: "No file name" })
+    try {
+        if(!req.query || !req.query.fileName) {
+            return res.status(401).send({ success: false, message: "No file name" })
+        }
+        const reqFile = req.query.fileName;
+        const filePath = `${__dirname}/uploads/${reqFile}`;
+        res.download(filePath);   
+    } catch (error) {
+        res.status(500).send({ success: false, message: "Oops, server error" })
     }
-    const reqFile = req.query.fileName;
-    const filePath = `${__dirname}/uploads/${reqFile}`;
-    res.download(filePath)
 })
 
 // buffer route
