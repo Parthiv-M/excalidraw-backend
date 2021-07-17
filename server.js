@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-// const cors = require("cors");
+const cors = require("cors");
 
 const formidable = require("formidable");
 const fs = require("fs");
@@ -8,6 +8,7 @@ const fs = require("fs");
 const port = process.env.PORT || 3001;
 
 // use express middleware
+app.use(cors());
 app.use(express.json({ extended: false }));
 
 const saveFile = async (file, fileName) => {
